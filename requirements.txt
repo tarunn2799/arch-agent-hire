@@ -2,5 +2,6 @@ streamlit
 requests
 pydantic
 litellm
+gspread
 thefuzz 
 python-Levenshtein
