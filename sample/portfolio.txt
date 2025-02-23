@@ -1,0 +1,27 @@
+PORTFOLIO PROJECTS
+
+1. MIXED-USE URBAN COMPLEX (Academic Thesis Project)
+   - Comprehensive design for a multi-story mixed-use building in a densely populated urban area
+   - Focused on green roofs, passive ventilation techniques, and public community spaces
+   - Tools & Methods: Revit for BIM modeling, InDesign for final presentation layout
+
+2. ECO-FRIENDLY RESIDENTIAL DEVELOPMENT (Internship at GreenForm Studios)
+   - Contributed to designing 20 energy-efficient homes in a suburban context
+   - Incorporated recycled materials, rainwater harvesting, and maximized natural lighting
+   - Created concept sketches and prepared schematic plans in AutoCAD
+
+3. MODERN ART GALLERY RENOVATION (Independent Concept)
+   - Proposed a remodel of a heritage building into a contemporary art space
+   - Preserved original façade while introducing open-plan interior galleries
+   - Utilized SketchUp and Lumion for 3D visualization and rendered walkthrough
+
+4. COMMUNITY CENTER RECREATION HALL (University Studio Project)
+   - Collaborated with a small team to design a multi-functional sports and events center
+   - Emphasized sustainable features like cross-ventilation and modular façade panels
+   - Modeled in Rhino and presented final boards via Photoshop/Illustrator
+
+NOTABLE SKILLS & TECHNIQUES SHOWCASED
+- Integrating sustainability principles in early design phases
+- 3D visualization & rendering (V-Ray, Lumion)
+- Concept-to-detail design approach: from sketches to detailed construction drawings
+- Visual storytelling via diagrams, exploded axonometric drawings, and expressive digital renders

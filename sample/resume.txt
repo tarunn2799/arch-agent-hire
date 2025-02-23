@@ -1,0 +1,36 @@
+John Doe
+1234 Elm Street, Springfield, USA | (555) 123-4567 | johndoe@email.com
+LinkedIn: linkedin.com/in/johndoe | Portfolio: johndoe-portfolio.com
+
+EDUCATION
+- Bachelor of Architecture, University of Springfield (2016–2021)
+  - Graduated with Honors
+  - Thesis: “Sustainable Urban Housing: Revitalizing Downtown Cores”
+
+ARCHITECTURE INTERNSHIPS
+- Summer Intern, Smith & Associates (2020)
+  - Assisted in drafting floor plans and 3D modeling for a mixed-use development project
+  - Collaborated with senior architects to review and update construction documents
+
+- Architectural Intern, GreenForm Studios (2019)
+  - Researched sustainable materials and design solutions for residential projects
+  - Created concept sketches and participated in client presentations
+
+TECHNICAL SKILLS
+- AutoCAD, Revit, SketchUp, Rhino, Adobe Creative Suite (Photoshop, Illustrator, InDesign)
+- Sustainable Design Methods (LEED GA knowledge)
+- Hand Rendering and Concept Sketching
+- Basic 3D Rendering (V-Ray, Lumion)
+
+PROFESSIONAL SKILLS
+- Team Collaboration & Leadership
+- Client Communication & Presentation
+- Design Conceptualization & Development
+- Problem Solving & Critical Thinking
+
+EXTRACURRICULAR
+- Volunteer, Habitat for Humanity (helped build affordable housing in local community)
+- Member, American Institute of Architecture Students (AIAS)
+
+AWARDS
+- AIAS Regional Design Award, 2021, for “Adaptive Reuse of Historic Theater”
