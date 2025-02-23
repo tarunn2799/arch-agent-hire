@@ -5,7 +5,11 @@ import concurrent.futures
 from pydantic import BaseModel, Field
 from typing import Optional
 from litellm import completion
-from arch_prompts import PROMPTS  # Ensure this is available in your environment
+from arch_prompts import PROMPTS
+import gspread_utils
+from uuid import uuid4
+from thefuzz import fuzz
+import re
 
 # -------------------------------------------------------------------
 # 1. Pydantic model for parsing the perplexity email response
@@ -46,10 +50,7 @@ class Agent:
 # Helper functions to fetch from Perplexity in parallel
 # -------------------------------------------------------------------
 def get_firm_description(firm_name: str, pplx_api_key: str):
-    """
-    Calls Perplexity to get the firm description and extracts the reasoning.
-    Returns (firm_desc, firm_desc_reasoning).
-    """
+    """Calls Perplexity to get the firm description and extracts the reasoning."""
     url = "https://api.perplexity.ai/chat/completions"
     headers = {"Authorization": f"Bearer {pplx_api_key}"}
 
@@ -72,9 +73,6 @@ def get_firm_description(firm_name: str, pplx_api_key: str):
     response = requests.post(url, headers=headers, json=payload).json()
     full_content = response["choices"][0]["message"]["content"]
 
-    # The original code uses <think> ... </think> for reasoning and everything after
-    # the last </think> for final answer.
-    # We'll parse them similarly:
     try:
         firm_desc_reasoning = full_content.split("<think>")[1].split("</think>")[0]
     except:
@@ -85,13 +83,10 @@ def get_firm_description(firm_name: str, pplx_api_key: str):
 
 
 def get_recruiting_email(firm_name: str, pplx_api_key: str):
-    """
-    Calls Perplexity to get the recruiting email, returns (email, email_reasoning).
-    """
+    """Calls Perplexity to get the recruiting email, returns (email, email_reasoning)."""
     url = "https://api.perplexity.ai/chat/completions"
     headers = {"Authorization": f"Bearer {pplx_api_key}"}
 
-    # We re-use the same model and schema from the original script
     payload = {
         "model": "sonar-reasoning-pro",
         "messages": [
@@ -120,13 +115,11 @@ def get_recruiting_email(firm_name: str, pplx_api_key: str):
     response = requests.post(url, headers=headers, json=payload).json()
     full_content = response["choices"][0]["message"]["content"]
 
-    # Attempt to parse out the <think> reasoning
     try:
         recr_email_reasoning = full_content.split("<think>")[1].split("</think>")[0]
     except:
         recr_email_reasoning = "No reasoning available."
 
-    # Then parse the JSON (between ```json ... ```)
     try:
         json_str = full_content.split("```json")[-1].split("```")[0].strip()
         recruiting_email_data = json.loads(json_str)
@@ -141,9 +134,7 @@ def get_recruiting_email(firm_name: str, pplx_api_key: str):
 # Cover letter + Email drafting
 # -------------------------------------------------------------------
 def generate_pointers(firm_desc: str, resume: str, portfolio: str) -> str:
-    """
-    Generate bullet points to highlight in the final email/cover letter.
-    """
+    """Generate bullet points to highlight in the final email/cover letter."""
     agent = Agent(sys_prompt=PROMPTS["generate_pointers"], model="gemini/gemini-2.0-flash")
     prompt = f"""
 For the given architecture firm, and my resume and portfolio details, generate a detailed bullet-point list of all the key alignment areas that should be mentioned in a personalized email to the recruiter.
@@ -161,9 +152,7 @@ Portfolio details:
 
 
 def write_email(email_pointers: str, resume: str) -> str:
-    """
-    Write the final email based on pointers and resume.
-    """
+    """Write the final email based on pointers and resume."""
     agent = Agent(sys_prompt=PROMPTS["write_email"], model="gemini/gemini-2.0-flash")
     prompt = f"""
 Using the pointers provided and my resume as context, write a concise, personalized email to a recruiter at an architectural firm for an entry-level position.
@@ -178,9 +167,7 @@ Resume:
 
 
 def write_cover_letter(email_pointers: str, resume: str, job_description: str) -> str:
-    """
-    Write a cover letter based on pointers, resume, and job description (if provided).
-    """
+    """Write a cover letter based on pointers, resume, and job description."""
     agent = Agent(sys_prompt=PROMPTS["write_cover_letter"], model="gemini/gemini-2.0-flash")
     prompt = f"""
 Using the job description, personalized pointers provided, and my resume as context, write the perfect cover letter for a candidate applying to an architectural firm. 
@@ -205,37 +192,28 @@ def main():
     st.title("Architecture Firm Outreach App")
     st.write("Generate a personalized recruiter email (and optionally a cover letter) for architecture firms.")
 
-    # ---- Sidebar for global inputs (resume + portfolio) ----
     with st.sidebar:
         st.header("Your Details")
         resume_text = st.text_area("Paste your Resume text here:", height=200)
         portfolio_text = st.text_area("Paste your Portfolio details here:", height=200)
 
-        # A button to reset everything
         if st.button("Reset All"):
-            # Clear all session_state
             for key in st.session_state.keys():
                 del st.session_state[key]
             st.experimental_rerun()
 
-    # Store the resume and portfolio in st.session_state if not already stored
     if "resume" not in st.session_state:
         st.session_state["resume"] = resume_text
     if "portfolio" not in st.session_state:
         st.session_state["portfolio"] = portfolio_text
 
-    # If user changes the text areas, update session state
     st.session_state["resume"] = resume_text
     st.session_state["portfolio"] = portfolio_text
 
-    # Prompt for firm name
     st.subheader("Firm Input")
     firm_name = st.text_input("Enter the firm's name here:")
 
-    # Toggle: do we want to fetch the recruiting email or not?
     fetch_email = st.checkbox("Fetch Recruiting Email from the firm?", value=True)
-
-    # Toggle for cover letter
     write_cover = st.checkbox("Write a Cover Letter?", value=False)
     job_description = ""
     if write_cover:
@@ -249,25 +227,64 @@ def main():
             st.warning("Please paste your Resume in the sidebar.")
             return
 
-        # 1. Fetch from Perplexity in parallel
-        pplx_api_key = st.secrets["PERPLEXITY_API_KEY"]  # from streamlit secrets
-        # Start concurrency
-        with st.spinner("Fetching data from Perplexity..."):
-            firm_desc, firm_desc_reasoning = "", ""
-            recruiting_email, recr_email_reasoning = None, ""
+        # Initialize Google Sheets connection
+        utils = gspread_utils.GSpreadUtils()
+        utils.open_by_key(st.secrets["gspread"]["sheet_key"])
+        worksheet_name = st.secrets["gspread"]["sheet_name"]
+        records = utils.get_all_records(worksheet_name)
 
+        # Fuzzy match checking
+        def clean_name(name):
+            name = name.lower()
+            name = re.sub(r'[^\w\s]', '', name)
+            return name.strip()
+
+        cleaned_input = clean_name(firm_name)
+        matched_record = None
+        threshold = 80
+
+        # Check for existing matches
+        for record in records:
+            cleaned_record = clean_name(record['Firm Name'])
+            similarity = fuzz.ratio(cleaned_input, cleaned_record)
+            if similarity >= threshold:
+                matched_record = record
+                st.info(f"Found cache match with {similarity}% similarity.")
+                break
+
+        if matched_record:
+            # Use cached data
+            firm_desc = matched_record['Firm Description']
+            firm_desc_reasoning = "Retrieved from cache."
+            
             if fetch_email:
-                # Two tasks in parallel
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    f1 = executor.submit(get_firm_description, firm_name, pplx_api_key)
-                    f2 = executor.submit(get_recruiting_email, firm_name, pplx_api_key)
-                    firm_desc, firm_desc_reasoning = f1.result()
-                    recruiting_email, recr_email_reasoning = f2.result()
+                recruiting_email = matched_record['Firm Recruiter Email']
+                recr_email_reasoning = "Retrieved from cache."
             else:
-                # Only fetch the firm description
-                firm_desc, firm_desc_reasoning = get_firm_description(firm_name, pplx_api_key)
+                recruiting_email = None
+                recr_email_reasoning = "Email fetch disabled."
+        else:
+            # Call Perplexity API
+            pplx_api_key = st.secrets["PERPLEXITY_API_KEY"]
+            with st.spinner("Fetching data from Perplexity..."):
+                if fetch_email:
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        f1 = executor.submit(get_firm_description, firm_name, pplx_api_key)
+                        f2 = executor.submit(get_recruiting_email, firm_name, pplx_api_key)
+                        firm_desc, firm_desc_reasoning = f1.result()
+                        recruiting_email, recr_email_reasoning = f2.result()
+                else:
+                    firm_desc, firm_desc_reasoning = get_firm_description(firm_name, pplx_api_key)
+                    recruiting_email = None
+                    recr_email_reasoning = ""
 
-        # 2. Generate pointers from resume, portfolio, and the firm description
+            # Cache new data
+            new_id = str(uuid4())
+            row_data = [new_id, firm_name, firm_desc, recruiting_email or ""]
+            utils.append_row(worksheet_name, row_data)
+            st.success("New firm data cached successfully!")
+
+        # Generate pointers
         with st.spinner("Generating alignment pointers..."):
             pointers = generate_pointers(
                 firm_desc,
@@ -275,14 +292,11 @@ def main():
                 st.session_state["portfolio"]
             )
 
-        # 3. Write the email
+        # Write email
         with st.spinner("Drafting your email..."):
-            email_draft = write_email(
-                pointers,
-                st.session_state["resume"],
-            )
+            email_draft = write_email(pointers, st.session_state["resume"])
 
-        # 4. Write cover letter (if chosen)
+        # Write cover letter
         cover_letter = ""
         if write_cover:
             with st.spinner("Drafting your cover letter..."):
@@ -292,20 +306,17 @@ def main():
                     job_description
                 )
 
-        # ----- Display final results -----
+        # Display results
         st.success("Done! See your results below:")
         st.write("---")
 
-        # Output "report" style screen
         st.header("Output Overview")
-
         st.subheader("Firm Description")
         st.write(firm_desc)
 
         if fetch_email:
             st.subheader("Recruiting Email")
             st.write(recruiting_email if recruiting_email else "No email found.")
-            # Optionally show reasoning
             with st.expander("Show Email Extraction Reasoning"):
                 st.write(recr_email_reasoning)
 
@@ -316,28 +327,19 @@ def main():
             st.subheader("Cover Letter")
             st.write(cover_letter)
 
-        # At the bottom, allow showing the description reasoning
         with st.expander("Show Firm Description Reasoning"):
             st.write(firm_desc_reasoning)
 
-        # ---- Download button: combine everything into one text
-        output_text = []
-        output_text.append("# Firm Description\n")
-        output_text.append(f"{firm_desc}\n\n")
-
-        if fetch_email:
-            output_text.append("# Recruiting Email\n")
-            output_text.append(f"{recruiting_email if recruiting_email else 'No email found.'}\n\n")
-
-        output_text.append("# Email Draft\n")
-        output_text.append(f"{email_draft}\n\n")
-
+        # Download button
+        output_text = [
+            "# Firm Description\n" + firm_desc,
+            "# Recruiting Email\n" + (recruiting_email if recruiting_email else "No email found."),
+            "# Email Draft\n" + email_draft,
+        ]
         if write_cover:
-            output_text.append("# Cover Letter\n")
-            output_text.append(f"{cover_letter}\n\n")
+            output_text.append("# Cover Letter\n" + cover_letter)
 
-        # Provide a download button for the final text
-        final_txt = "\n".join(output_text)
+        final_txt = "\n\n".join(output_text)
         st.download_button(
             label="Download All Results as .txt",
             data=final_txt,
