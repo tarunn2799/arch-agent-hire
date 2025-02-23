@@ -45,7 +45,6 @@ class Agent:
             st.warning(f"LLM call failed: {e}")
             return ""
 
-
 # -------------------------------------------------------------------
 # Helper functions to fetch from Perplexity in parallel
 # -------------------------------------------------------------------
@@ -80,7 +79,6 @@ def get_firm_description(firm_name: str, pplx_api_key: str):
     firm_desc = full_content.split("</think>")[-1].strip()
 
     return firm_desc, firm_desc_reasoning
-
 
 def get_recruiting_email(firm_name: str, pplx_api_key: str):
     """Calls Perplexity to get the recruiting email, returns (email, email_reasoning)."""
@@ -129,7 +127,6 @@ def get_recruiting_email(firm_name: str, pplx_api_key: str):
 
     return recruiting_email, recr_email_reasoning
 
-
 # -------------------------------------------------------------------
 # Cover letter + Email drafting
 # -------------------------------------------------------------------
@@ -150,7 +147,6 @@ Portfolio details:
 """
     return agent.llm_call(prompt)
 
-
 def write_email(email_pointers: str, resume: str) -> str:
     """Write the final email based on pointers and resume."""
     agent = Agent(sys_prompt=PROMPTS["write_email"], model="gemini/gemini-2.0-flash")
@@ -164,7 +160,6 @@ Resume:
 {resume}
 """
     return agent.llm_call(prompt)
-
 
 def write_cover_letter(email_pointers: str, resume: str, job_description: str) -> str:
     """Write a cover letter based on pointers, resume, and job description."""
@@ -184,7 +179,6 @@ Resume:
 """
     return agent.llm_call(prompt)
 
-
 # -------------------------------------------------------------------
 # Streamlit App
 # -------------------------------------------------------------------
@@ -196,6 +190,12 @@ def main():
         st.header("Your Details")
         resume_text = st.text_area("Paste your Resume text here:", height=200)
         portfolio_text = st.text_area("Paste your Portfolio details here:", height=200)
+        
+        st.header("API Keys")
+        pplx_api_key = st.text_input("Perplexity API Key", type="password", 
+                                   value=st.secrets.get("PERPLEXITY_API_KEY", ""))
+        gemini_api_key = st.text_input("Gemini API Key", type="password",
+                                     value=st.secrets.get("GEMINI_API_KEY", ""))
 
         if st.button("Reset All"):
             for key in st.session_state.keys():
@@ -225,6 +225,12 @@ def main():
             return
         if not st.session_state["resume"].strip():
             st.warning("Please paste your Resume in the sidebar.")
+            return
+        if not pplx_api_key:
+            st.warning("Please provide a Perplexity API Key")
+            return
+        if not gemini_api_key:
+            st.warning("Please provide a Gemini API Key")
             return
 
         # Initialize Google Sheets connection
@@ -265,7 +271,6 @@ def main():
                 recr_email_reasoning = "Email fetch disabled."
         else:
             # Call Perplexity API
-            pplx_api_key = st.secrets["PERPLEXITY_API_KEY"]
             with st.spinner("Fetching data from Perplexity..."):
                 if fetch_email:
                     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -346,7 +351,6 @@ def main():
             file_name=f"{firm_name.replace(' ', '_')}_output.txt",
             mime="text/plain"
         )
-
 
 if __name__ == "__main__":
     main()
