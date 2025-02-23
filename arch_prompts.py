@@ -55,7 +55,7 @@ Maintain a polite, professional, and engaging tone throughout.
 
 Structure & Format:
 
-Begin with a brief, respectful greeting.
+Begin with a brief, respectful greeting. Do not leave a placeholder for the greeting, if you don't have their name, you can just use a generic greeting like "Dear Hiring Manager"
 Include an introductory paragraph that mentions the candidate’s educational background and current status.
 Follow with a paragraph highlighting professional experience and key alignment points from the notes.
 Conclude with a clear statement of interest in an entry-level position and a polite invitation for further discussion.
@@ -69,7 +69,7 @@ End with a courteous closing that invites the recruiter to connect.
 Output Requirements:
 
 Generate a final email draft that is ready to send.
-Ensure the email is clear, persuasive, and personalized.
+Ensure the email is clear, persuasive, and personalized. 
 """,
 
 "write_cover_letter" : """
