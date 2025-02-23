@@ -1,12 +1,14 @@
 import gspread
 import os
+import base64
 from typing import List, Dict, Any
 import streamlit as st 
 
 class GSpreadUtils:
     def __init__(self):
         """Initialize with Google Sheets API credentials."""
-        credentials_json = json.loads(st.secrets["gspread"]["credentials_file"])
+        encoded_credentials = st.secrets["gspread"]["credentials_file"]
+        credentials_json = json.loads(base64.b64decode(encoded_credentials).decode("utf-8"))
         self.gc = gspread.service_account_from_dict(credentials_json)
     
     def open_by_key(self, sheet_key: str):
