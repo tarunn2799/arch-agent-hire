@@ -126,6 +126,7 @@ Use these as references for the format/level of detail you can provide. Adjust t
 - If **Job Description** is **not** provided, the cover letter will be **generic**, highlighting your background and interest in future roles at the firm.  
 - Ensure your **Perplexity** and **Gemini** API keys remain **private**.  
 - Cached data in your Google Sheet will speed up subsequent queries for the same firms.
+- **This tool can make mistakes! ALWAYS double check the results.**
 
 ---
 
