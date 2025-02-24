@@ -194,7 +194,10 @@ def main():
         st.header("API Keys")
         pplx_api_key = st.text_input("Perplexity API Key", type="password")
         gemini_api_key = st.text_input("Gemini API Key", type="password")
-        
+        st.header("Display API Keys")
+        if st.button("Show API Keys"):
+            st.write(f"Perplexity API Key: {pplx_api_key}")
+            st.write(f"Gemini API Key: {gemini_api_key}")
         if st.button("Reset All"):
             for key in st.session_state.keys():
                 del st.session_state[key]
