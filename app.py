@@ -192,11 +192,9 @@ def main():
         portfolio_text = st.text_area("Paste your Portfolio details here:", height=200)
         
         st.header("API Keys")
-        pplx_api_key = st.text_input("Perplexity API Key", type="password", 
-                                   value=st.secrets.get("PERPLEXITY_API_KEY", ""))
-        gemini_api_key = st.text_input("Gemini API Key", type="password",
-                                     value=st.secrets.get("GEMINI_API_KEY", ""))
-
+        pplx_api_key = st.text_input("Perplexity API Key", type="password")
+        gemini_api_key = st.text_input("Gemini API Key", type="password")
+        
         if st.button("Reset All"):
             for key in st.session_state.keys():
                 del st.session_state[key]
